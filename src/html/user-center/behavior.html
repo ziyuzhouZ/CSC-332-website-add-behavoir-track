@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户行为分析 - Fashion Store</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/components/navbar.css">
+    <link rel="stylesheet" href="../../css/components/footer.css">
+    <link rel="stylesheet" href="../../css/pages/user-behavior.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 用户状态样式 */
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .login-link, .register-link, .user-link {
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            padding: 5px 10px;
+            transition: color 0.3s;
+        }
+        
+        .login-link:hover, .register-link:hover, .user-link:hover {
+            color: #888;
+        }
+        
+        .user-dropdown {
+            position: relative;
+        }
+    </style>
+    
+    <!-- 加载必要的模块 -->
+    <script type="module">
+        import { checkLoginStatus, getCurrentUser, updateNavbarUserStatus } from '../../js/modules/auth/session.js';
+        import { BehaviorTracker } from '../../js/utils/behavior-tracker.js';
+        
+        // 页面加载时检查登录状态
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log('用户行为页面加载完成，开始检查登录状态');
+            
+            // 检查登录状态
+            const isLoggedIn = checkLoginStatus();
+            console.log('检查登录状态:', isLoggedIn);
+            
+            if (!isLoggedIn) {
+                console.log('未登录或会话已过期，即将跳转到登录页面');
+                alert('请先登录');
+                window.location.href = '../auth/login.html';
+                return;
+            }
+            
+            try {
+                // 获取当前用户信息
+                const user = getCurrentUser();
+                console.log('当前登录用户:', user);
+                
+                // 更新导航栏状态
+                updateNavbarUserStatus();
+                
+                // 初始化行为跟踪器
+                if (typeof window.behaviorTracker === 'undefined') {
+                    console.log('初始化行为跟踪器');
+                    window.behaviorTracker = new BehaviorTracker();
+                }
+            } catch (error) {
+                console.error('处理用户数据出错:', error);
+                alert('会话无效，请重新登录');
+                window.location.href = '../auth/login.html';
+            }
+        });
+    </script>
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="navbar-left">
+                <button class="menu-toggle" aria-label="菜单">
+                    <span>男装</span>
+                    <span>女装</span>
+                    <span>配饰</span>
+                </button>
+                <ul class="nav-links">
+                    <li><a href="../index.html">首页</a></li>
+                    <li>
+                        <a href="../shop.html" class="dropdown-toggle">商品分类</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="../shop.html?category=women">女装</a></li>
+                            <li><a href="../shop.html?category=men">男装</a></li>
+                            <li><a href="../shop.html?category=accessories">配饰</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="../about-pages/brand-story.html">品牌故事</a></li>
+                    <li><a href="../store-finder.html">最近门店</a></li>
+                </ul>
+            </div>
+            
+            <div class="navbar-center">
+                <a href="../index.html" class="logo">
+                    <img src="../../public/images/icons/logo.png" alt="FASHION" class="logo-img">
+                </a>
+            </div>
+            
+            <div class="navbar-right">
+                <div class="user-status">
+                    <!-- 用户状态将由JS动态生成 -->
+                </div>
+                <div class="nav-icons">
+                    <a href="../shop.html" class="icon-link">
+                        <img src="../../public/images/icons/shop.png" alt="购物" class="icon">
+                    </a>
+                    <a href="../cart.html" class="icon-link cart-icon">
+                        <img src="../../public/images/icons/cart.png" alt="购物车" class="icon">
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="user-behavior-container">
+        <div class="behavior-header">
+            <h1>用户行为分析</h1>
+            <div class="action-buttons">
+                <button id="refreshBtn" class="btn-secondary">刷新数据</button>
+                <button id="analyzeBtn" class="btn-primary">分析数据</button>
+            </div>
+        </div>
+
+        <div class="behavior-content">
+            <div class="behavior-section">
+                <h2>页面浏览数据</h2>
+                <div class="data-display">
+                    <div class="data-card">
+                        <h3>总访问量</h3>
+                        <p class="data-value" id="totalVisits">0</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>平均停留时长</h3>
+                        <p class="data-value" id="avgDuration">0分钟</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>跳出率</h3>
+                        <p class="data-value" id="bounceRate">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="behavior-section">
+                <h2>用户点击行为</h2>
+                <div class="data-display">
+                    <div class="data-card">
+                        <h3>用户总点击次数</h3>
+                        <p class="data-value" id="totalClicks">0</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>用户总浏览时长</h3>
+                        <p class="data-value" id="totalDuration">0分钟</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>最常点击区域</h3>
+                        <p class="data-value" id="mostClickedArea">-</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>最常浏览区域</h3>
+                        <p class="data-value" id="mostBrowsedArea">-</p>
+                    </div>
+                    <div class="data-card">
+                        <h3>转化率</h3>
+                        <p class="data-value" id="conversionRate">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-results" id="analysisResults" style="display: none;">
+                <h2>详细分析报告</h2>
+                <div class="charts-container">
+                    <div class="chart">
+                        <h3>访问量趋势</h3>
+                        <canvas id="visitsChart"></canvas>
+                    </div>
+                    <div class="chart">
+                        <h3>点击分布</h3>
+                        <canvas id="clickDistributionChart"></canvas>
+                    </div>
+                </div>
+                <div class="detailed-table">
+                    <h3>详细数据表</h3>
+                    <table id="detailedTable">
+                        <thead>
+                            <tr>
+                                <th>页面</th>
+                                <th>停留时长</th>
+                                <th>点击次数</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 数据将由JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>关于我们</h3>
+                <ul>
+                    <li><a href="../about-pages/brand-story.html">品牌故事</a></li>
+                    <li><a href="../about-pages/contact.html">联系我们</a></li>
+                    <li><a href="../about-pages/careers.html">加入我们</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>帮助中心</h3>
+                <ul>
+                    <li><a href="../about-pages/shopping-guide.html">购物指南</a></li>
+                    <li><a href="../about-pages/shipping-returns.html">退换政策</a></li>
+                    <li><a href="../about-pages/faq.html">常见问题</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>关注我们</h3>
+                <div class="social-links">
+                    <a href="https://weixin.qq.com" target="_blank" rel="noopener noreferrer" aria-label="关注我们的微信公众号">微信</a>
+                    <a href="https://weibo.com" target="_blank" rel="noopener noreferrer" aria-label="关注我们的微博">微博</a>
+                    <a href="https://www.douyin.com" target="_blank" rel="noopener noreferrer" aria-label="关注我们的抖音">抖音</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>商务合作</h3>
+                <ul>
+                    <li><a href="../about-pages/partners.html">品牌合作</a></li>
+                    <li><a href="../about-pages/media.html">媒体报道</a></li>
+                    <li><a href="../about-pages/investors.html">投资者关系</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Fashion Store. All rights reserved. | 隐私政策 | 用户协议 | 营业执照</p>
+        </div>
+    </footer>
+
+    <!-- 业务模块 -->
+    <script type="module" src="../../js/modules/cart.js"></script>
+    <script type="module" src="../../js/pages/user-behavior.js"></script>
+</body>
+</html> 
